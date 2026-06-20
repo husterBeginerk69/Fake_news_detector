@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI News Classifier</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+        }
+
+        .header {
+            text-align: center;
+            padding: 14px;
+            font-size: 20px;
+            font-weight: bold;
+            background: #111827;
+        }
+
+        table {
+            width: 100%;
+            height: calc(100vh - 55px);
+            border-collapse: collapse;
+        }
+
+        td {
+            vertical-align: top;
+            padding: 15px;
+            border: 1px solid #1f2937;
+        }
+
+        .box {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        input, textarea {
+            width: 100%;
+            margin-top: 8px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: #0b1220;
+            color: white;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #3b82f6;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        .badge {
+            font-size: 22px;
+            font-weight: 700;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: #0b1220;
+            display: inline-block;
+            min-width: 220px;
+        }
+
+        .section-title {
+            margin-top: 18px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #cbd5e1;
+        }
+
+        .bar {
+            width: 100%;
+            background: #111827;
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 10px;
+            width: 0%;
+            background: linear-gradient(90deg, #22c55e, #3b82f6);
+        }
+
+        .model-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .mini-bar {
+            height: 5px;
+            background: #111827;
+            border-radius: 5px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .mini-fill {
+            height: 5px;
+            width: 0%;
+        }
+
+        .raw-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #0b1220;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">🧠 AI News Classification Dashboard</div>
+
+<table>
+<tr>
+
+<!-- ================= LEFT ================= -->
+<td style="width: 40%;">
+    <div class="box">
+
+        <div class="section-title">Input Article</div>
+
+        <input id="title" placeholder="Article title">
+
+        <textarea id="body" rows="12" placeholder="Article content..."></textarea>
+
+        <button onclick="predict()">Analyze</button>
+
+    </div>
+</td>
+
+<!-- ================= RIGHT ================= -->
+<td>
+
+<div class="box">
+
+    <!-- PREDICTION -->
+    <div style="text-align:center;">
+        <div id="result" class="badge">
+            Waiting...
+        </div>
+    </div>
+
+    <!-- CONFIDENCE -->
+    <div class="section-title">Confidence</div>
+
+    <div class="bar">
+        <div id="bar" class="bar-fill"></div>
+    </div>
+
+    <div id="confText"
+         style="margin-top:8px; font-size:13px; color:#94a3b8;">
+        Model waiting for input...
+    </div>
+
+    <!-- MODEL OUTPUTS -->
+    <div class="section-title">Model Outputs</div>
+
+    <div class="model-row">
+        <span>Naive Bayes</span>
+        <span id="nb">-</span>
+    </div>
+    <div class="mini-bar">
+        <div id="nb_bar" class="mini-fill" style="background:#60a5fa;"></div>
+    </div>
+
+    <div class="model-row">
+        <span>SVM</span>
+        <span id="svm">-</span>
+    </div>
+    <div class="mini-bar">
+        <div id="svm_bar" class="mini-fill" style="background:#34d399;"></div>
+    </div>
+
+    <div class="model-row">
+        <span>Random Forest</span>
+        <span id="rf">-</span>
+    </div>
+    <div class="mini-bar">
+        <div id="rf_bar" class="mini-fill" style="background:#f59e0b;"></div>
+    </div>
+
+    <!-- RAW DATA (REAL BACKEND ONLY) -->
+    <div class="section-title">Raw Model Values</div>
+
+    <div class="raw-box">
+        <div>NB: <span id="nb_raw">-</span></div>
+        <div>SVM: <span id="svm_raw">-</span></div>
+        <div>RF: <span id="rf_raw">-</span></div>
+    </div>
+
+</div>
+
+</td>
+
+</tr>
+</table>
+
+<script>
+function predict() {
+
+    const title = document.getElementById("title").value;
+    const body = document.getElementById("body").value;
+
+    fetch("/predict", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ title, body })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.error) {
+            document.getElementById("result").innerText = data.error;
+            return;
+        }
+
+        // ================= PREDICTION =================
+        document.getElementById("result").innerText =
+            data.prediction;
+
+        // color logic (frontend only)
+        let color = "#3b82f6";
+        if (data.prediction.toLowerCase().includes("fake")) {
+            color = "#ef4444";
+        } else {
+            color = "#22c55e";
+        }
+        document.getElementById("result").style.background = color;
+
+        // ================= CONFIDENCE =================
+        let conf = data.confidence;
+
+        document.getElementById("bar").style.width =
+            (conf * 100) + "%";
+
+        document.getElementById("confText").innerText =
+            (conf * 100).toFixed(1) + "% confidence";
+
+        // ================= MODELS =================
+        const nb = data.level1_models.naive_bayes;
+        const svm = data.level1_models.svm;
+        const rf  = data.level1_models.random_forest;
+
+        document.getElementById("nb").innerText = (nb * 100).toFixed(1) + "%";
+        document.getElementById("svm").innerText = (svm * 100).toFixed(1) + "%";
+        document.getElementById("rf").innerText = (rf * 100).toFixed(1) + "%";
+
+        document.getElementById("nb_bar").style.width = (nb * 100) + "%";
+        document.getElementById("svm_bar").style.width = (svm * 100) + "%";
+        document.getElementById("rf_bar").style.width = (rf * 100) + "%";
+
+        // ================= RAW =================
+        document.getElementById("nb_raw").innerText = nb;
+        document.getElementById("svm_raw").innerText = svm;
+        document.getElementById("rf_raw").innerText = rf;
+
+    });
+
+}
+</script>
+
+</body>
+</html>
