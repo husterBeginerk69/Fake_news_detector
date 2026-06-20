@@ -159,8 +159,8 @@
         </div>
     </div>
 
-    <!-- CONFIDENCE -->
-    <div class="section-title">Confidence</div>
+    <!-- Fake Probability -->
+    <div class="section-title">Fake Probability</div>
 
     <div class="bar">
         <div id="bar" class="bar-fill"></div>
@@ -200,6 +200,14 @@
 
     <!-- RAW DATA (REAL BACKEND ONLY) -->
     <div class="section-title">Raw Model Values</div>
+
+    <div class="meta-explanation">
+        <h3>Meta Decision</h3>
+
+        <div id="metaExplanation">
+            Waiting for prediction...
+        </div>
+    </div>
 
     <div class="raw-box">
         <div>NB: <span id="nb_raw">-</span></div>
@@ -248,15 +256,30 @@ function predict() {
         }
         document.getElementById("result").style.background = color;
 
-        // ================= CONFIDENCE =================
-        let conf = data.confidence;
+        // ================= Fake Probability =================
+        let fakeProb = data.fake_probability;
+        let realProb = 1 - fakeProb;
 
-        document.getElementById("bar").style.width =
-            (conf * 100) + "%";
+        const bar = document.getElementById("bar");
 
-        document.getElementById("confText").innerText =
-            (conf * 100).toFixed(1) + "% confidence";
+        bar.style.width =
+            (fakeProb * 100) + "%";
 
+        if(data.prediction === "Fake"){
+            bar.style.background =
+                "#ef4444";
+        }
+        else{
+            bar.style.background =
+                "#22c55e";
+        }
+
+        document.getElementById("confText").innerHTML =
+           `
+            Fake: ${(fakeProb * 100).toFixed(1)}%
+        <br>
+            Real: ${(realProb * 100).toFixed(1)}%
+        `;
         // ================= MODELS =================
         const nb = data.level1_models.naive_bayes;
         const svm = data.level1_models.svm;
@@ -274,6 +297,12 @@ function predict() {
         document.getElementById("nb_raw").innerText = nb;
         document.getElementById("svm_raw").innerText = svm;
         document.getElementById("rf_raw").innerText = rf;
+
+
+        document.getElementById(
+            "metaExplanation"
+        ).innerText =
+        data.explanation;
 
     });
 

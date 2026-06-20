@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.sparse import hstack
 
 # Gọi hàm làm sạch từ file preprocessing.py vừa tạo
-from preprocessing import preprocess_text
+from src.preprocessing import preprocess_text
 
 # Tải các mô hình
 vec_title = joblib.load("models/full_vectorizer_title.pkl")
@@ -43,12 +43,33 @@ def predict_news(title, body):
     final_prob = meta.predict_proba(meta_input)[0][1]
     prediction = "Fake" if final_prob >= 0.5 else "Real"
 
+    # ===== META EXPLANATION =====
+
+    scores = {
+        "Naive Bayes": prob_nb,
+        "SVM": prob_svm,
+        "Random Forest": prob_rf
+    }
+
+    dominant_model = max(
+       scores,
+       key=scores.get
+    )
+
+    explanation = (
+        f"Meta model relied most on "
+        f"{dominant_model} "
+        f"({scores[dominant_model]:.1%}) "
+        f"when making this prediction."
+    )
+
     return {
         "prediction": prediction,
-        "confidence": float(final_prob),
+        "fake_probability": float(final_prob),
         "prob_nb": float(prob_nb),
         "prob_svm": float(prob_svm),
-        "prob_rf": float(prob_rf)
+        "prob_rf": float(prob_rf),
+        "explanation": explanation
     }
 
 if __name__ == "__main__":

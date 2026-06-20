@@ -58,11 +58,14 @@ def predict():
         "prediction":
             result["prediction"],
 
-        "confidence":
+        "fake_probability":
             round(
-                float(result["confidence"]),
+                float(result["fake_probability"]),
                 4
             ),
+
+        "explanation":
+            result["explanation"],    
 
         "level1_models": {
 
