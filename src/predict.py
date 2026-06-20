@@ -1,82 +1,47 @@
+# Tên file: predict.py
 import joblib
-import numpy as np
 import pandas as pd
-
 from scipy.sparse import hstack
 
-# Load artifacts
+# Gọi hàm làm sạch từ file preprocessing.py vừa tạo
+from preprocessing import preprocess_text
 
-vec_title = joblib.load(
-    "models/full_vectorizer_title.pkl"
-)
+# Tải các mô hình
+vec_title = joblib.load("models/full_vectorizer_title.pkl")
+vec_body = joblib.load("models/full_vectorizer_body.pkl")
+svd = joblib.load("models/full_svd_rf.pkl")
 
-vec_body = joblib.load(
-    "models/full_vectorizer_body.pkl"
-)
-
-svd = joblib.load(
-    "models/full_svd_rf.pkl"
-)
-
-nb = joblib.load(
-    "models/final_model_nb.pkl"
-)
-
-svm = joblib.load(
-    "models/final_model_svm.pkl"
-)
-
-rf = joblib.load(
-    "models/final_model_rf.pkl"
-)
-
-meta = joblib.load(
-    "models/meta_model.pkl"
-)
+nb = joblib.load("models/final_model_nb.pkl")
+svm = joblib.load("models/final_model_svm.pkl")
+rf = joblib.load("models/final_model_rf.pkl")
+meta = joblib.load("models/meta_model.pkl")
 
 
 def predict_news(title, body):
+    # 1. TIỀN XỬ LÝ (Sử dụng hàm đã import)
+    clean_title, clean_body = preprocess_text(title, body)
 
-    title_vec = vec_title.transform(
-        [title]
-    )
+    # 2. VECTOR HÓA
+    title_vec = vec_title.transform([clean_title])
+    body_vec = vec_body.transform([clean_body])
+    X = hstack([title_vec, body_vec])
 
-    body_vec = vec_body.transform(
-        [body]
-    )
-
-    X = hstack([
-        title_vec,
-        body_vec
-    ])
-
-    # Level 1
-
+    # 3. DỰ ĐOÁN CẤP ĐỘ 1 (Level 1)
     prob_nb = nb.predict_proba(X)[0][1]
-
     prob_svm = svm.predict_proba(X)[0][1]
-
+    
     X_rf = svd.transform(X)
-
     prob_rf = rf.predict_proba(X_rf)[0][1]
 
-    # Level 2
-
+    # 4. DỰ ĐOÁN META (Level 2)
     meta_input = pd.DataFrame({
         "prob_nb": [prob_nb],
         "prob_svm": [prob_svm],
         "prob_rf": [prob_rf]
     })
 
-    final_prob = meta.predict_proba(
-        meta_input
-    )[0][1]
-
-    prediction = (
-        "Fake"
-        if final_prob >= 0.5
-        else "Real"
-    )
+    final_prob = meta.predict_proba(meta_input)[0][1]
+    prediction = "Fake" if final_prob >= 0.5 else "Real"
 
     return {
         "prediction": prediction,
@@ -86,12 +51,9 @@ def predict_news(title, body):
         "prob_rf": float(prob_rf)
     }
 
-
 if __name__ == "__main__":
-
     result = predict_news(
         "Breaking News",
         "This is a test article."
     )
-
     print(result)
